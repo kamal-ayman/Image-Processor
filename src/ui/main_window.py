@@ -20,7 +20,7 @@ class MainWindow(ctk.CTk):
         super().__init__()
 
         self.service = ImageService()
-        self.title("Pro Image Processor v1.0")
+        self.title("Image Processor Project")
         self.geometry("1300x800")
         
         # UI State
