@@ -150,10 +150,13 @@ class MainWindow(ctk.CTk):
         elif op_name in ["Gray to Binary", "RGB to Binary"]:
             kwargs['threshold'] = int(p * 255)
         elif "Noise" in op_name:
-            kwargs['sigma'] = p * 100
-            kwargs['salt_prob'] = p/10
-            kwargs['pepper_prob'] = p/10
-            kwargs['b'] = p * 100
+            if op_name == "Gaussian Noise":
+                kwargs['sigma'] = p * 100
+            elif op_name == "Salt & Pepper Noise":
+                kwargs['salt_prob'] = p/10
+                kwargs['pepper_prob'] = p/10
+            elif op_name == "Rayleigh Noise":
+                kwargs['b'] = p * 100
         elif op_name in ["Mean", "Median", "Max", "Min", "Midpoint"]:
             kwargs['kernel_size'] = int(p * 20) | 1
         elif op_name == "Gamma":
