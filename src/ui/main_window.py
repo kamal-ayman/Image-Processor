@@ -11,8 +11,6 @@ from ..infrastructure.filters.spatial.spatial_filters import *
 from ..infrastructure.filters.frequency.frequency_filters import *
 from ..infrastructure.noise.noise_operations import *
 from ..infrastructure.morphology.morphological_operations import *
-from ..infrastructure.enhancement.enhancement_operations import *
-from ..infrastructure.transform.transform_operations import *
 from ..infrastructure.detection.detection_operations import *
 
 class MainWindow(ctk.CTk):
@@ -20,54 +18,32 @@ class MainWindow(ctk.CTk):
         super().__init__()
 
         self.service = ImageService()
-        self.title("Image Processor Project")
+        self.title("Image Processor Project - Group 4")
         self.geometry("1300x800")
         
-        # UI State
+        # UI State (Strictly Restricted to the 12 Group 4 Filters)
         self.categories = {
-            "Transform": ["Grayscale", "Gray to Binary", "RGB to Binary"],
-            "Spatial Filters": ["Mean", "Median", "Max", "Min", "Midpoint"],
-            "Frequency Filters": ["Ideal LPF", "Ideal HPF", "Butterworth LPF", "Butterworth HPF", "Gaussian LPF", "Gaussian HPF"],
-            "Noise": ["Gaussian Noise", "Salt & Pepper", "Rayleigh Noise"],
-            "Morphology": ["Erosion", "Dilation", "Opening", "Closing", "Boundary"],
-            "Enhancement": ["Hist Equalization", "Contrast Stretch", "Brightness", "Negative", "Log", "Gamma"],
-            "Detection/Sharp": ["Point Detection", "Point Sharpening", "Line Detection", "Line Sharpening"]
+            "Spatial": ["Weighted Average", "Bilateral Filter"],
+            "Frequency": ["Ideal LPS", "Gaussian HPF"],
+            "Noise": ["Rayleigh", "Impulse (S&P)", "Exponential"],
+            "Morphology": ["Dilation", "Opening"],
+            "Detection/Sharp": ["Robert Cross", "Laplacian", "Unsharp Masking"]
         }
         
         # Operation Mapping
         self.ops: Dict[str, ImageOperation] = {
-            "Grayscale": RgbToGrayscale(),
-            "Gray to Binary": GrayToBinary(),
-            "RGB to Binary": RgbToBinary(),
-            "Mean": MeanFilter(),
-            "Median": MedianFilter(),
-            "Max": MaxFilter(),
-            "Min": MinFilter(),
-            "Midpoint": MidpointFilter(),
-            "Ideal LPF": IdealLowPassFilter(),
-            "Ideal HPF": IdealHighPassFilter(),
-            "Butterworth LPF": ButterworthLowPassFilter(),
-            "Butterworth HPF": ButterworthHighPassFilter(),
-            "Gaussian LPF": GaussianLowPassFilter(),
+            "Weighted Average": WeightedAverageFilter(),
+            "Bilateral Filter": BilateralFilter(),
+            "Ideal LPS": IdealLowPassFilter(),
             "Gaussian HPF": GaussianHighPassFilter(),
-            "Gaussian Noise": GaussianNoise(),
-            "Salt & Pepper": SaltAndPepperNoise(),
-            "Rayleigh Noise": RayleighNoise(),
-            "Erosion": Erosion(),
+            "Rayleigh": RayleighNoise(),
+            "Impulse (S&P)": ImpulseNoise(),
+            "Exponential": ExponentialNoise(),
             "Dilation": Dilation(),
             "Opening": Opening(),
-            "Closing": Closing(),
-            "Boundary": BoundaryExtraction(),
-            "Hist Equalization": HistogramEqualization(),
-            "Contrast Stretch": ContrastStretching(),
-            "Brightness": BrightnessAdjustment(),
-            "Negative": ImageNegative(),
-            "Log": LogTransformation(),
-            "Gamma": GammaCorrection(),
-            "Point Detection": PointDetection(),
-            "Point Sharpening": PointSharpening(),
-            "Line Detection": LineDetection(),
-            "Line Sharpening": LineSharpening()
+            "Robert Cross": RobertCrossFilter(),
+            "Laplacian": LaplacianFilter(),
+            "Unsharp Masking": UnsharpMasking()
         }
 
         self._setup_ui()
@@ -94,7 +70,7 @@ class MainWindow(ctk.CTk):
         self.cat_menu.pack(pady=5, padx=20)
 
         ctk.CTkLabel(self.sidebar, text="Operation:").pack(pady=(10, 0))
-        self.op_menu = ctk.CTkOptionMenu(self.sidebar, values=self.categories["Transform"])
+        self.op_menu = ctk.CTkOptionMenu(self.sidebar, values=self.categories["Spatial"])
         self.op_menu.pack(pady=5, padx=20)
 
         ctk.CTkLabel(self.sidebar, text="Parameter:").pack(pady=(20, 0))
@@ -143,28 +119,21 @@ class MainWindow(ctk.CTk):
         
         if not operation: return
 
-        # Simple parameter mapping logic
+        # Parameter mapping
         kwargs = {}
-        if op_name in ["Ideal LPF", "Ideal HPF", "Butterworth LPF", "Butterworth HPF", "Gaussian LPF", "Gaussian HPF"]:
-            kwargs['d0'] = p * 200
-        elif op_name in ["Gray to Binary", "RGB to Binary"]:
-            kwargs['threshold'] = int(p * 255)
-        elif "Noise" in op_name:
-            if op_name == "Gaussian Noise":
-                kwargs['sigma'] = p * 100
-            elif op_name == "Salt & Pepper Noise":
-                kwargs['salt_prob'] = p/10
-                kwargs['pepper_prob'] = p/10
-            elif op_name == "Rayleigh Noise":
-                kwargs['b'] = p * 100
-        elif op_name in ["Mean", "Median", "Max", "Min", "Midpoint"]:
-            kwargs['kernel_size'] = int(p * 20) | 1
-        elif op_name == "Gamma":
-            kwargs['gamma'] = max(0.01, p * 4)
-        elif op_name == "Brightness":
-            kwargs['offset'] = (p - 0.5) * 200
-        elif "Sharpening" in op_name:
-            kwargs['alpha'] = p * 5
+        if op_name in ["Ideal LPS", "Gaussian HPF"]:
+            kwargs['d0'] = p * 150 + 10
+        elif op_name in ["Rayleigh", "Exponential"]:
+            if op_name == "Rayleigh": kwargs['b'] = p * 50
+            if op_name == "Exponential": kwargs['a'] = p * 2 + 0.1
+        elif op_name == "Impulse (S&P)":
+            kwargs['salt_prob'] = p/10
+            kwargs['pepper_prob'] = p/10
+        elif op_name in ["Weighted Average", "Dilation", "Opening", "Unsharp Masking"]:
+            kwargs['kernel_size'] = int(p * 10) | 1
+        elif op_name == "Bilateral Filter":
+            kwargs['d'] = int(p * 15)
+            kwargs['sigma_color'] = p * 100
 
         self.service.apply_operation(operation, **kwargs)
         self._update_display()
@@ -179,15 +148,12 @@ class MainWindow(ctk.CTk):
             self._show_image(proc, self.label_proc)
 
     def _show_image(self, img_np, label):
-        # Convert BGR (OpenCV) to RGB (PIL)
         if len(img_np.shape) == 3:
             img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
         else:
             img_rgb = img_np
         
         img_pil = Image.fromarray(img_rgb)
-        
-        # Fit to size
         img_ctk = ctk.CTkImage(light_image=img_pil, dark_image=img_pil, size=(450, 450))
         label.configure(image=img_ctk, text="")
         label.image = img_ctk

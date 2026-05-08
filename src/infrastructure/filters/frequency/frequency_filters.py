@@ -27,40 +27,12 @@ class FrequencyFilter(ImageOperation):
         return np.sqrt((u_grid - rows/2)**2 + (v_grid - cols/2)**2)
 
 class IdealLowPassFilter(FrequencyFilter):
+    """Ideal LPS (Low Pass System)"""
     def execute(self, image: np.ndarray, d0: float = 30) -> np.ndarray:
         image = ensure_grayscale(image)
         dist = self._get_distance_grid(image.shape)
         mask = np.zeros_like(image, dtype=np.float64)
         mask[dist <= d0] = 1
-        return self._apply_filter_mask(image, mask)
-
-class IdealHighPassFilter(FrequencyFilter):
-    def execute(self, image: np.ndarray, d0: float = 30) -> np.ndarray:
-        image = ensure_grayscale(image)
-        dist = self._get_distance_grid(image.shape)
-        mask = np.zeros_like(image, dtype=np.float64)
-        mask[dist > d0] = 1
-        return self._apply_filter_mask(image, mask)
-
-class ButterworthLowPassFilter(FrequencyFilter):
-    def execute(self, image: np.ndarray, d0: float = 30, n: int = 2) -> np.ndarray:
-        image = ensure_grayscale(image)
-        dist = self._get_distance_grid(image.shape)
-        mask = 1 / (1 + (dist / d0)**(2 * n))
-        return self._apply_filter_mask(image, mask)
-
-class ButterworthHighPassFilter(FrequencyFilter):
-    def execute(self, image: np.ndarray, d0: float = 30, n: int = 2) -> np.ndarray:
-        image = ensure_grayscale(image)
-        dist = self._get_distance_grid(image.shape)
-        mask = 1 / (1 + (d0 / (dist + 1e-10))**(2 * n))
-        return self._apply_filter_mask(image, mask)
-
-class GaussianLowPassFilter(FrequencyFilter):
-    def execute(self, image: np.ndarray, d0: float = 30) -> np.ndarray:
-        image = ensure_grayscale(image)
-        dist = self._get_distance_grid(image.shape)
-        mask = np.exp(-(dist**2) / (2 * (d0**2)))
         return self._apply_filter_mask(image, mask)
 
 class GaussianHighPassFilter(FrequencyFilter):
